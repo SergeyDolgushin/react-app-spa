@@ -1,29 +1,29 @@
-class MarvelService {
-    _apiBase = 'http://gateway.marvel.com/v1/public/';
-    _apiKey = 'apikey=997bb8aac491739cb51516491f5f7d2f';
-    _baseOffset = 210;
+import { useHttp } from '../hooks/http.hook'
 
-    getResource = async (url) => {
-        let res = await fetch(url);
 
-        if (!res.ok) {
-            throw new Error(`Could not fetch ${url}, status: ${res.status}`);
-        }
+const useMarvelService = () => {
+    const { loading, request, error, clearError } = useHttp();
 
-        return await res.json();
+    const _apiBase = 'http://gateway.marvel.com/v1/public/';
+    const _apiKey = 'apikey=997bb8aac491739cb51516491f5f7d2f';
+    const _baseOffset = 210;
+
+    const getAllCharacters = async (offset = _baseOffset) => {
+        const res = await request(`${_apiBase}characters?limit=9&offset=${offset}&${_apiKey}`);
+        return res.data.results.map(_adaptDatafromServer);
     }
 
-    getAllCharacters = async (offset = this._baseOffset) => {
-        const res = await this.getResource(`${this._apiBase}characters?limit=9&offset=${offset}&${this._apiKey}`);
-        return res.data.results.map(this._adaptDatafromServer);
+    const getAllComics = async (offset = _baseOffset) => {
+        const res = await request(`${_apiBase}comics?limit=8&offset=${offset}&${_apiKey}`);
+        return res.data.results.map(_adaptComicsDatafromServer);
     }
 
-    getCharacter = async (id) => {
-        const res = await this.getResource(`${this._apiBase}characters/${id}?${this._apiKey}`);
-        return this._adaptDatafromServer(res.data.results[0]);
+    const getCharacter = async (id) => {
+        const res = await request(`${_apiBase}characters/${id}?${_apiKey}`);
+        return _adaptDatafromServer(res.data.results[0]);
     }
 
-    _adaptDatafromServer = (item) => {
+    const _adaptDatafromServer = (item) => {
         return {
             name: item.name,
             description: item.description,
@@ -34,6 +34,19 @@ class MarvelService {
             comics: item.comics.items
         }
     }
+
+    const _adaptComicsDatafromServer = (item) => {
+        return {
+            name: item.title,
+            description: item.description,
+            thumbnail: item.thumbnail.path + '.' + item.thumbnail.extension,
+            homepage: item.urls[0].url,
+            id: item.id,
+            // comics: item.comics.items
+        }
+    }
+
+    return { loading, error, getAllCharacters, getCharacter, clearError, getAllComics };
 }
 
-export default MarvelService;
+export default useMarvelService;
